@@ -1,4 +1,3 @@
-
 library(vcfR)
 library(adegenet)
 library(adegraphics)
