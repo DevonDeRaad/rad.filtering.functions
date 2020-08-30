@@ -43,8 +43,12 @@ filter.completeness <- function(x){
   #list snp names
   snp<-colnames(gen.mat)
   #create dataframe of missing data by snp
-  df.x<-data.frame(snp=snp, completeness=completeness)
+  completeness.by.snp<-data.frame(snp=snp, completeness=completeness)
+  #return the dataframe
+  return(completeness.by.snp)
   
+  #make histogram of the data
+  ggplot(completeness.by.snp, aes(x=completeness)) + geom_histogram()
   
   
   #loop that stores a vector of # non-missing loci retained for each individual
