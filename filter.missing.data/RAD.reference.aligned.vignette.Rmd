@@ -31,33 +31,34 @@ library(ggplot2)
 
 #apply these 4 hard filters with vcffilter 
 #"Allele balance: a number between 0 and 1 representing the ratio of reads showing the reference allele to all reads, considering only reads from individuals called as heterozygous, we expect that the allele balance in our data (for real loci) should be close to 0.5"
-#vcffilter -s -f "AB > 0.25 & AB < 0.75 | AB < 0.01" populations.snps.recode.vcf > populations.snps.recode.vcf
+#/panfs/pfs.local/work/bi/bin/conda/bin/vcffilter -s -f "AB > 0.25 & AB < 0.75 | AB < 0.01" populations.snps.recode.vcf > populations.snps.recode.vcf
 
 #Unless you are using super small genomic fragment or really long reads (MiSeq). A SNP should be covered only by forward or only reverse reads.
-#vcffilter -f "SAF / SAR > 100 & SRF / SRR > 100 | SAR / SAF > 100 & SRR / SRF > 100" -s populations.snps.recode.vcf > populations.snps.recode.vcf
+#/panfs/pfs.local/work/bi/bin/conda/bin/vcffilter -f "SAF / SAR > 100 & SRF / SRR > 100 | SAR / SAF > 100 & SRR / SRF > 100" -s populations.snps.recode.vcf > populations.snps.recode.vcf
 
 #"In short, with whole genome samples, it was found that high coverage can lead to inflated locus quality scores... removing any locus that has a quality score below 1/4 of the depth.""
-#vcffilter -f "QUAL / DP > 0.25" populations.snps.recode.vcf > populations.snps.recode.vcf
+#/panfs/pfs.local/work/bi/bin/conda/bin/vcffilter -f "QUAL / DP > 0.25" populations.snps.recode.vcf > populations.snps.recode.vcf
 
 #"Because RADseq loci and alleles all should start from the same genomic location there should not be large discrepancy between the mapping qualities of two alleles."
-#vcffilter -f "MQM / MQMR > 0.9 & MQM / MQMR < 1.05" populations.snps.recode.vcf > populations.snps.recode.vcf
+#/panfs/pfs.local/work/bi/bin/conda/bin/vcffilter -f "MQM / MQMR > 0.9 & MQM / MQMR < 1.05" populations.snps.recode.vcf > populations.snps.recode.vcf
 ```
 
-#step2: visualize missing data by sample. Run this code on the cluster as your last step after exporting an unfiltered vcf file from STACKS populations. Check out the visualizations and make decision on which samples to keep for downstream analysis.
+#step2: visualize missing data by sample. Check out the visualizations and make decision on which samples to keep for downstream analysis.
 
 #Read in your hard filtered vcf file
 ```{r}
 #read in vcf as vcfR
 vcfR <- read.vcfR("populations.snps.recode.vcf")
-### convert vcfR to genlight
-genlight <- vcfR2genlight(vcfR)
-#turn genlight into snp matrix
-gen.mat<-as.matrix(genlight)
 ```
 
 #We can use this convenient chromR visualization to ensure that hard quality filtering was successful and we don't see an abundance of low depth variants, poorly mapped variants etc.
 ```{r chromR}
-
+#create chromR object
+chrom <- create.chromR(vcf=vcfR)
+#visualize the vcf
+plot(chrom)
+#check out depth and quality
+chromoqc(chrom)
 ```
 
 #Now we can visualize missing data and depth of sequencing by sample and by population
@@ -65,6 +66,10 @@ gen.mat<-as.matrix(genlight)
 #It is also wise to take missing data into account by population. Often we don't know a-priori what our populations will look like, but in general we want to avoid making inferences about populations if they have consistently less information than the rest of our dataset.
 #On the flip side of that coin, you may have designed a project to get information about a rare sample/population that lacks existing genetic sampling, and therefore must retain specific samples despite low sequencing and high missing data. This is a reality, and simply needs to be addressed carefully.
 ```{r}
+### convert vcfR to genlight
+genlight <- vcfR2genlight(vcfR)
+#turn genlight into snp matrix
+gen.mat<-as.matrix(genlight)
 #use the function from our package to visualize missing data by individual and population
 
 #subset the vcfR object to only include the samples we want to retain
