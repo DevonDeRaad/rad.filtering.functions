@@ -5,6 +5,8 @@ date: "8/24/2020"
 output: html_document
 ---
 
+THIS DOCUMENT CONTAINS PSEUDOCODE TO ORGANIZE THE PIPELINE
+
 ```{r setup}
 library(vcfR)
 library(adegenet)
@@ -18,7 +20,29 @@ library(ggmap)
 library(ggplot2)
 ```
 
-#step 1: Use vcftools and vcffilter to implement quality filters that don't require percentage/quantile based cutoffs, or dataset specific cutoffs. This is because removing low data samples will alter percentage/quantile based cutoffs, and because some filters require visualization of the specific dataset in order to ensure setting cutoffs correctly (e.g. max depth cutoff depends greatly on the outcome of your sequencing run)
+#step1: visualize missing data by sample. Check out the visualizations and make decision on which samples to keep for downstream analysis.
+
+#Read in your unfiltered vcf file
+```{r}
+#read in vcf as vcfR
+vcfR <- read.vcfR("populations.snps.recode.vcf")
+```
+
+#Now we can visualize missing data and depth of sequencing by sample and by population
+#Determining which samples to retain is highly project specific, and is contingent on your sampling, your taxa, the sequencing results, etc.
+#It is also wise to take missing data into account by population. Often we don't know a-priori what our populations will look like, but in general we want to avoid making inferences about populations if they have consistently less information than the rest of our dataset.
+#On the flip side of that coin, you may have designed a project to get information about a rare sample/population that lacks existing genetic sampling, and therefore must retain specific samples despite low sequencing and high missing data. This is a reality, and simply needs to be addressed carefully.
+```{r}
+### check the metadata present in your vcf
+queryMETA(vcfR)
+#use the function from our package to visualize missing data by individual and population
+
+#subset the vcfR object to only include the samples we want to retain
+```
+
+
+#REWRITE THESE FILTERS TO BE APPLIED IN R via vcfR
+#step 2: Use vcftools and vcffilter to implement quality filters that don't require percentage/quantile based cutoffs, or dataset specific cutoffs. This is because removing low data samples will alter percentage/quantile based cutoffs, and because some filters require visualization of the specific dataset in order to ensure setting cutoffs correctly (e.g. max depth cutoff depends greatly on the outcome of your sequencing run)
 ###Note:
 #If you have a very large vcf output file that you would like to work with in Rstudio, you could implement some percentage based filters (e.g. remove all SNPs above 50% missing data) via vcftools to reduce your filesize before starting to filter in R. Just be aware that once you drop low data samples, your previously enforced (per SNP or locus) missing data % will no longer be exact.
 
@@ -43,15 +67,15 @@ library(ggplot2)
 #/panfs/pfs.local/work/bi/bin/conda/bin/vcffilter -f "MQM / MQMR > 0.9 & MQM / MQMR < 1.05" populations.snps.recode.vcf > populations.snps.recode.vcf
 ```
 
-#step2: visualize missing data by sample. Check out the visualizations and make decision on which samples to keep for downstream analysis.
-
-#Read in your hard filtered vcf file
+#Now that we have decided on the set of samples we will include for downstream analysis, we can run additional quality filtering based on percentages and quantiles, to further increase our signal to noise ratio. I will start with a depth filter (super high depth loci are likely multiple loci stuck together into a single paralogous locus).
 ```{r}
-#read in vcf as vcfR
-vcfR <- read.vcfR("populations.snps.recode.vcf")
+#visualize mean depth per SNP
+#set cutoff to filter out high depth SNPS
 ```
 
-#We can use this convenient chromR visualization to ensure that hard quality filtering was successful and we don't see an abundance of low depth variants, poorly mapped variants etc.
+###Note: It may be a good idea to additionally filter out SNPs that are significantly out of HWE if you have a really good idea of what the population structure in your sample looks like and good sample sizes in each pop. For this dataset, which is highly structured (many isolated island pops) with species boundaries that are in flux, I am not going to use a HWE filter, because I don't feel comfortable confidently identifying populations in which we can expect HWE.
+
+#We can use this convenient chromR visualization to ensure that quality filtering was successful and we don't see an abundance of low depth variants, poorly mapped variants etc.
 ```{r chromR}
 #create chromR object
 chrom <- create.chromR(vcf=vcfR)
@@ -60,29 +84,6 @@ plot(chrom)
 #check out depth and quality
 chromoqc(chrom)
 ```
-
-#Now we can visualize missing data and depth of sequencing by sample and by population
-#Determining which samples to retain is highly project specific, and is contingent on your sampling, your taxa, the sequencing results, etc.
-#It is also wise to take missing data into account by population. Often we don't know a-priori what our populations will look like, but in general we want to avoid making inferences about populations if they have consistently less information than the rest of our dataset.
-#On the flip side of that coin, you may have designed a project to get information about a rare sample/population that lacks existing genetic sampling, and therefore must retain specific samples despite low sequencing and high missing data. This is a reality, and simply needs to be addressed carefully.
-```{r}
-### convert vcfR to genlight
-genlight <- vcfR2genlight(vcfR)
-#turn genlight into snp matrix
-gen.mat<-as.matrix(genlight)
-#use the function from our package to visualize missing data by individual and population
-
-#subset the vcfR object to only include the samples we want to retain
-```
-
-
-#Now that we have decided on the set of samples we will include for downstream analysis, we can run additional quality filtering based on percentages and quantiles, to further increase our signal to noise ratio. I will start with a depth filter (super high depth loci are likely multiple loci stuck together into a single paralogous locus).
-```{r}
-#visualize mean depth per SNP
-#set cutoff to filter out high depth SNPS
-```
-
-###Note: It may be a good idea to additionally filter out SNPs that are significantly out of HWE if you have a really good idea of what the population structure in your sample looks like and good sample sizes in each pop. For this dataset, which is highly structured (many isolated island pops) with species boundaries that are in flux, I am not going to use a HWE filter, because I don't feel comfortable confidently identifying populations in which we can expect HWE.
 
 #Now we must set the arbitrary missing data cutoff
 #We can visualize the effect that typical missing data cutoffs will have on both the number of SNPs retained and the total missing data in our entire dataset.
@@ -96,9 +97,9 @@ gen.mat<-as.matrix(genlight)
 
 #Now, we should investigate the effect of a minor allele frequency cutoff on our downstream inferences. MAF cutoffs can be helpful in removing spurious and uninformative loci from the dataset, but also have the potential to bias downstream inferences. Linck and Battey (2019) have an excellent paper on just this topic.
 #This package contains some convenient wrapper functions that streamline the investigation of MAF cutoffs.
-#Once again, implementing a MAF cutoff is going to depend on your project and the amount of divergence between your populations. For something like phylogenetic reconstruction of deeply diverged species, a MAF cutoff may increase signal to noise ratio and make your SNP dataset more computationally tractible. In contrast, your ability to identify fine scale geographic variation between sampling localities that are actively exchanging migrants may be hampered by a MAF cutoff as recently derived low frequency, private alleles may be the only thing separating these populations.
+#Once again, implementing a MAF cutoff is going to depend on your project and the amount of divergence between your populations. For something like phylogenetic reconstruction of deeply diverged species, a MAF cutoff may increase signal to noise ratio and make your SNP dataset more computationally tractible. In contrast, your ability to identify fine scale geographic variation between sampling localities that are actively exchanging migrants may be hampered by a MAF cutoff as recently derived, low frequency, private alleles may be the only thing separating these populations.
 ```{r}
-
+#use maf investigation filters from our package
 ```
 
 
