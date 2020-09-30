@@ -51,7 +51,7 @@ min.mac <- function(vcfR, popmap=NULL, min.mac=NULL){
       dapc1<-dapc(genlight, grp$grp, n.da = length(levels(popmap$pop))-1, pca.select = "percVar", perc.pca = 75)
       
       #plot compoplot
-      compoplot(dapc1, legend=FALSE, col=funky(2), show.lab =TRUE, cex.names=.4, main=paste0("min. MAC ",i,", total SNPs ",length(sfs)))
+      compoplot(dapc1, legend=FALSE, col=funky(), show.lab =TRUE, cex.names=.4, main=paste0("min. MAC ",i,", total SNPs ",length(sfs)))
       
       #print
       print(paste0("DAPC with min. MAC ", i, " and ", length(sfs), " total SNPs, complete"))
