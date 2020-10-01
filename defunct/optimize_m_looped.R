@@ -232,6 +232,7 @@ optimize_m <- function(m1=NULL,m2=NULL,m3=NULL,m4=NULL,m5=NULL,m6=NULL,m7=NULL){
 
 
 
-optimize_m(m1="~/Downloads/todi.allsnps.vcf")
+m<-optimize_m(m1="~/Downloads/3bConUnfilteredVCF/populations.conserv.snps.vcf",
+           m2="~/Downloads/3bConUnfilteredVCF/bi.allelic.unlinked.conserv.ery.recode.vcf")
 
 

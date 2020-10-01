@@ -1,33 +1,32 @@
 library(vcfR)
-library(stringr)
+library(adegenet)
+library(adegraphics)
+library(pegas)
+library(StAMPP)
+library(lattice)
+library(gplots)
+library(ape)
+library(ggmap) 
 library(ggplot2)
 library(ggridges)
 
+
 #open function:
-optimize_m <- function(m3=NULL,m4=NULL,m5=NULL,m6=NULL,m7=NULL){
-  #initialize empty depth.df
-  depth.df<- data.frame(m=character(), avg.depth=numeric())
-  #initialize empty m.df
-  m.df<- data.frame(m=character(), filt=as.numeric(), snps=numeric(), V4=character())
+optimize_M <- function(M1=NULL,M2=NULL,M3=NULL,M4=NULL,M5=NULL,M6=NULL,M7=NULL,M8=NULL){
+  #initialize empty M.df
+  M.df<- data.frame(M=character(), filt=as.numeric(), snps=numeric(), V4=character())
   #set vector of m identifiers
-  ms<-c("m3","m4","m5","m6","m7")
+  Ms<-c("M1","M2","M3","M4","M5","M6","M7","M8")
   #start on first position in vector of m identifiers
   j=1
   
   #open for loop for each m identifier
-  for(x in list(m3,m4,m5,m6,m7)){
+  for(x in list(M1,M2,M3,M4,M5,M6,M7,M8)){
     #open if else statement, if no m of given value, move j up to next m identifier, else calculate snps/loci retained
     if(is.null(x)){j=j+1} else{
-      #calculate depth first
       ##read in vcfR
       vcf.r<- read.vcfR(x) #read in all data
-      ###calc avg depth of each individual
-      dep<- (colSums(extract.gt(vcf.r, element='DP', as.numeric=TRUE), na.rm = T)) / (colSums(is.na(extract.gt(vcf.r, element='DP', as.numeric=TRUE)) == "FALSE"))
-      ###rep m identifier, times = number of samples in the vcf
-      m<- rep(ms[j], times = length(dep))
-      ###cbind depth and m identifier into depth df
-      depth.df<- rbind(depth.df, as.data.frame(cbind(m,dep)))
-      
+
       #initialize vectors to hold filt level, snps retained, poly loci retained
       filt<- vector("numeric", length = 11)
       snps<- vector("numeric", length = 11)
@@ -45,12 +44,12 @@ optimize_m <- function(m3=NULL,m4=NULL,m5=NULL,m6=NULL,m7=NULL){
         #close for loop
       }
       ##cbind these three vectors with m identifier and append it all to the m df
-      snpsubset<-as.data.frame(cbind(rep(ms[j], times=11), filt, snps, rep("snp", times = 11)))
-      locisubset<-as.data.frame(cbind(rep(ms[j], times=11), filt, poly.loci, rep("loci", times = 11)))
+      snpsubset<-as.data.frame(cbind(rep(Ms[j], times=11), filt, snps, rep("snp", times = 11)))
+      locisubset<-as.data.frame(cbind(rep(Ms[j], times=11), filt, poly.loci, rep("loci", times = 11)))
       #match colnames so you can rbind these together in tidy format
       colnames(locisubset)[3]<-"snps"
       #append to existing df
-      m.df<- rbind(m.df, as.data.frame(rbind(snpsubset,locisubset)))
+      M.df<- rbind(M.df, as.data.frame(rbind(snpsubset,locisubset)))
       #set j for the next m identifier for next time we go through this loop
       j=j+1
       #close if else statement
@@ -58,44 +57,31 @@ optimize_m <- function(m3=NULL,m4=NULL,m5=NULL,m6=NULL,m7=NULL){
     #close for loop
   }
   
-  #take depth df output from all of these possibilities
-  #plot hist of depth at each m value on same plot
-  depth.df$m<-as.factor(depth.df$m)
-  depth.df$dep<-as.numeric(depth.df$dep)
-  print("Visualize how different values of m affect average depth in each sample")
-  print(
-    ggplot(depth.df, aes(x = dep, y = m, fill = m, color = m)) +
-      geom_density_ridges(jittered_points = TRUE, position = "raincloud", alpha = .35, cex=.5) +
-      theme_classic() +
-      labs(x = "average depth in each sample", y = "m value (minimum stack depth)") +
-      theme(legend.position = "none")
-  )
+  print("Optimal M value returns the most polymorphic loci in the 80% complete matrix (Paris et al. 2017)")
   #take m df output from all these possibilities
   #plot number of SNPs retained colored by m at each filt level, as open circles
   #plot the number of polymorphic loci retained colored by m at each filt level, as closed circles
   #plot a vertical line at x=.8
   #return a message as output telling the user to pick the m value with the most polyloci retained at r80 (.8)
   #rename columns
-  colnames(m.df)<-c("m","filt","retained","snp.locus")
-  m.df$m<-as.character(m.df$m)
-  m.df$filt<-as.numeric(as.character(m.df$filt))
-  m.df$retained<-as.numeric(as.character(m.df$retained))
-  m.df$snp.locus<-as.character(m.df$snp.locus)
-  print("The optimal m value returns the most polymorphic loci in the 80% complete matrix (Paris et al. 2017)")
+  colnames(M.df)<-c("M","filt","retained","snp.locus")
+  M.df$M<-as.character(M.df$M)
+  M.df$filt<-as.numeric(as.character(M.df$filt))
+  M.df$retained<-as.numeric(as.character(M.df$retained))
+  M.df$snp.locus<-as.character(M.df$snp.locus)
   print(
-    ggplot(m.df, aes(x=filt, y=retained, col = m, shape=snp.locus))+
+    ggplot(M.df, aes(x=filt, y=retained, col = M, shape=snp.locus))+
       geom_point()+
       ggtitle("total SNPs and polymorphic loci retained by filtering scheme") +
       xlab("fraction of non-missing genotypes required to retain each SNP (0-1)") + ylab("# SNPs/loci")+
       theme_light()+
       geom_vline(xintercept=.8)+
-      labs(col = "min. stack depth", shape="")
+      labs(col = c("mismatches allowed\nbetween stacks\nwithin a locus"), shape="")
   )
   
+  print("Correctly setting M requires a balance – set it too low and alleles from the same locus will not collapse, set it too high and paralogous or repetitive loci will incorrectly merge together. When alleles from the same locus are undermerged, the software will incorrectly consider them as independent loci. When loci are overmerged because they happen to be close in sequence space, an errant locus with false polymorphism will result. Therefore, M is particularly dataset‐specific because it depends on the natural levels of polymorphism in the species, as well as the amount of error generated during the preparation and sequencing of the RAD‐seq libraries.")
+  
   #return the depth and snp/loci dataframes in case you want to do your own visualizations
-  out <- list()
-  out$depth<-depth.df
-  out$m.comparisons<-m.df
-  return(out)
-  #close function
+  return(M.df)
+    #close function
 }
