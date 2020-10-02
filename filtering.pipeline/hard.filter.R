@@ -1,12 +1,9 @@
-library(vcfR)
-library(ggplot2)
-library(gridExtra)
 
-
+#open function
 hard.filter.vcf <- function(vcfR, depth=NULL, gq=NULL){
   
   #extract depth from the vcf
-  dp.matrix<- extract.gt(vcfR, element='DP', as.numeric=TRUE)
+  dp.matrix<- vcfR::extract.gt(vcfR, element='DP', as.numeric=TRUE)
   
   #calculate the SNPs that fall below the depth filter
   i<-round((sum(dp.matrix < depth, na.rm = TRUE)/sum(!is.na(dp.matrix)))*100, 2)
@@ -18,7 +15,7 @@ hard.filter.vcf <- function(vcfR, depth=NULL, gq=NULL){
   vcfR@gt[,-1][ is.na(dp.matrix) == TRUE ] <- NA
   
   #extract gq from the vcf
-  gq.matrix<- extract.gt(vcfR, element='GQ', as.numeric=TRUE)
+  gq.matrix<- vcfR::extract.gt(vcfR, element='GQ', as.numeric=TRUE)
   
   #calculate the SNPs that fall below the gq filter
   j<-round((sum(gq.matrix < gq, na.rm = TRUE)/sum(!is.na(gq.matrix)))*100, 2)
@@ -33,4 +30,4 @@ hard.filter.vcf <- function(vcfR, depth=NULL, gq=NULL){
 }
 
 
-vcfR<-hard.filter.vcf(vcfR=vcfR, depth = 5, gq = 30)
+vcfR<-hard.filter.vcf(vcfR=x, depth = 5, gq = 30)

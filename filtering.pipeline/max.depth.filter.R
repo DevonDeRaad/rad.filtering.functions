@@ -1,23 +1,23 @@
-library(vcfR)
-library(ggplot2)
-library(gridExtra)
 
-
+#open function
 max.depth <- function(vcfR, maxdepth=NULL){
   
   #extract depth from the vcf
-  dp.matrix<- extract.gt(vcfR, element='DP', as.numeric=TRUE)
+  dp.matrix<- vcfR::extract.gt(vcfR, element='DP', as.numeric=TRUE)
   
   #calculate vector of depth per SNP
   snpdepth<-rowSums(dp.matrix, na.rm = TRUE)/rowSums(is.na(dp.matrix) == FALSE)
+  
   if (is.null(maxdepth)){
-    
+    par(mfrow=c(2,1))
     #plot histogram of depth
-    hist(snpdepth, xlab = "mean of the depth of all samples successfully genotyped at a given SNP", main =NULL)
+    hist(snpdepth, xlab = "mean of the depth of all samples successfully genotyped at a given SNP",
+         main="histogram showing the depth of all called SNPs")
     abline(v=mean(snpdepth, na.rm = TRUE), col="red", lty="dashed")
     
     #zoomed in histogram
-    hist(snpdepth[snpdepth < 200], xlab = "mean of the depth of all samples successfully genotyped at a given SNP", main ="visualize distribution of SNPs below a depth of 200")
+    hist(snpdepth[snpdepth < 200], xlab = "mean of the depth of all samples successfully genotyped at a given SNP",
+         main ="distribution of SNPs below a depth of 200")
     abline(v=mean(snpdepth, na.rm = TRUE), col="red", lty="dashed")
     
     #print

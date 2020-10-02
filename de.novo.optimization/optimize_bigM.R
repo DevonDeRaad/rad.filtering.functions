@@ -1,15 +1,3 @@
-library(vcfR)
-library(adegenet)
-library(adegraphics)
-library(pegas)
-library(StAMPP)
-library(lattice)
-library(gplots)
-library(ape)
-library(ggmap) 
-library(ggplot2)
-library(ggridges)
-
 
 #open function:
 optimize_M <- function(M1=NULL,M2=NULL,M3=NULL,M4=NULL,M5=NULL,M6=NULL,M7=NULL,M8=NULL){
@@ -25,7 +13,7 @@ optimize_M <- function(M1=NULL,M2=NULL,M3=NULL,M4=NULL,M5=NULL,M6=NULL,M7=NULL,M
     #open if else statement, if no m of given value, move j up to next m identifier, else calculate snps/loci retained
     if(is.null(x)){j=j+1} else{
       ##read in vcfR
-      vcf.r<- read.vcfR(x) #read in all data
+      vcf.r<- vcfR::read.vcfR(x) #read in all data
 
       #initialize vectors to hold filt level, snps retained, poly loci retained
       filt<- vector("numeric", length = 11)
@@ -39,7 +27,7 @@ optimize_M <- function(M1=NULL,M2=NULL,M3=NULL,M4=NULL,M5=NULL,M6=NULL,M7=NULL,M
         #calculate the number of snps retained at this cutoff
         snps[k]<-nrow(vcf.r@gt[(rowSums(is.na(vcf.r@gt))/ncol(vcf.r@gt) <= 1-i),])
         #calculate number of polymorphic loci retained at this cutoff
-        poly.loci[k]<-length(unique(str_extract(vcf.r@fix[,3][(rowSums(is.na(vcf.r@gt))/ncol(vcf.r@gt) <= 1-i)], pattern = "[0-9]+")))
+        poly.loci[k]<-length(unique(stringr::str_extract(vcf.r@fix[,3][(rowSums(is.na(vcf.r@gt))/ncol(vcf.r@gt) <= 1-i)], pattern = "[0-9]+")))
         k=k+1
         #close for loop
       }
@@ -70,13 +58,14 @@ optimize_M <- function(M1=NULL,M2=NULL,M3=NULL,M4=NULL,M5=NULL,M6=NULL,M7=NULL,M
   M.df$retained<-as.numeric(as.character(M.df$retained))
   M.df$snp.locus<-as.character(M.df$snp.locus)
   print(
-    ggplot(M.df, aes(x=filt, y=retained, col = M, shape=snp.locus))+
-      geom_point()+
-      ggtitle("total SNPs and polymorphic loci retained by filtering scheme") +
-      xlab("fraction of non-missing genotypes required to retain each SNP (0-1)") + ylab("# SNPs/loci")+
-      theme_light()+
-      geom_vline(xintercept=.8)+
-      labs(col = c("mismatches allowed\nbetween stacks\nwithin a locus"), shape="")
+    ggplot2::ggplot(M.df, ggplot2::aes(x=filt, y=retained, col = M, shape=snp.locus))+
+      ggplot2::geom_point(alpha = .75, size=3)+
+      ggplot2::ggtitle("total SNPs and polymorphic loci retained by filtering scheme")+
+      ggplot2::xlab("fraction of non-missing genotypes required to retain each SNP (0-1)")+
+      ggplot2::ylab("# SNPs/loci")+
+      ggplot2::theme_light()+
+      ggplot2::geom_vline(xintercept=.8)+
+      ggplot2::labs(col = c("mismatches allowed\nbetween stacks\nwithin a locus"), shape="")
   )
   
   print("Correctly setting M requires a balance – set it too low and alleles from the same locus will not collapse, set it too high and paralogous or repetitive loci will incorrectly merge together. When alleles from the same locus are undermerged, the software will incorrectly consider them as independent loci. When loci are overmerged because they happen to be close in sequence space, an errant locus with false polymorphism will result. Therefore, M is particularly dataset‐specific because it depends on the natural levels of polymorphism in the species, as well as the amount of error generated during the preparation and sequencing of the RAD‐seq libraries.")

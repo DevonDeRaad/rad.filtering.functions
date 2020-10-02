@@ -1,14 +1,11 @@
-library(vcfR)
-library(ggplot2)
-library(gridExtra)
 
-
+#open function
 filter.allele.balance <- function(vcfR){
   
   #extract AD from the vcf
-  ad.matrix<- extract.gt(vcfR, element='AD')
+  ad.matrix<- vcfR::extract.gt(vcfR, element='AD')
   #extract GT from the vcf
-  gt.matrix<- extract.gt(vcfR, element='GT')
+  gt.matrix<- vcfR::extract.gt(vcfR, element='GT')
   
   #mask dp matrix to include only called hets from gt matrix
   ad.matrix[gt.matrix != "0/1"]<-NA

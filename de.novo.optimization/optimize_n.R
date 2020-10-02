@@ -1,7 +1,3 @@
-library(vcfR)
-library(stringr)
-library(ggplot2)
-library(ggridges)
 
 #open function:
 optimize_n <- function(nequalsMminus1=NULL,nequalsM=NULL,nequalsMplus1=NULL){
@@ -17,7 +13,7 @@ optimize_n <- function(nequalsMminus1=NULL,nequalsM=NULL,nequalsMplus1=NULL){
     #open if else statement, if no m of given value, move j up to next m identifier, else calculate snps/loci retained
     if(is.null(x)){j=j+1} else{
       ##read in vcfR
-      vcf.r<- read.vcfR(x) #read in all data
+      vcf.r<- vcfR::read.vcfR(x) #read in all data
       
       #initialize vectors to hold filt level, snps retained, poly loci retained
       filt<- vector("numeric", length = 11)
@@ -31,7 +27,7 @@ optimize_n <- function(nequalsMminus1=NULL,nequalsM=NULL,nequalsMplus1=NULL){
         #calculate the number of snps retained at this cutoff
         snps[k]<-nrow(vcf.r@gt[(rowSums(is.na(vcf.r@gt))/ncol(vcf.r@gt) <= 1-i),])
         #calculate number of polymorphic loci retained at this cutoff
-        poly.loci[k]<-length(unique(str_extract(vcf.r@fix[,3][(rowSums(is.na(vcf.r@gt))/ncol(vcf.r@gt) <= 1-i)], pattern = "[0-9]+")))
+        poly.loci[k]<-length(unique(stringr::str_extract(vcf.r@fix[,3][(rowSums(is.na(vcf.r@gt))/ncol(vcf.r@gt) <= 1-i)], pattern = "[0-9]+")))
         k=k+1
         #close for loop
       }
@@ -62,13 +58,14 @@ optimize_n <- function(nequalsMminus1=NULL,nequalsM=NULL,nequalsMplus1=NULL){
   n.df$retained<-as.numeric(as.character(n.df$retained))
   n.df$snp.locus<-as.character(n.df$snp.locus)
   print(
-    ggplot(n.df, aes(x=filt, y=retained, col = n, shape=snp.locus))+
-      geom_point()+
-      ggtitle("total SNPs and polymorphic loci retained by filtering scheme") +
-      xlab("fraction of non-missing genotypes required to retain each SNP (0-1)") + ylab("# SNPs/loci")+
-      theme_light()+
-      geom_vline(xintercept=.8)+
-      labs(col = c("mismatches allowed\nbetween stacks\nduring catalogue building"), shape="")
+    ggplot2::ggplot(n.df, ggplot2::aes(x=filt, y=retained, col = n, shape=snp.locus))+
+      ggplot2::geom_point(alpha = .75, size=3)+
+      ggplot2::ggtitle("total SNPs and polymorphic loci retained by filtering scheme")+
+      ggplot2::xlab("fraction of non-missing genotypes required to retain each SNP (0-1)")+
+      ggplot2::ylab("# SNPs/loci")+
+      ggplot2::theme_light()+
+      ggplot2::geom_vline(xintercept=.8)+
+      ggplot2::labs(col = c("mismatches allowed\nbetween stacks\nduring catalogue building"), shape="")
   )
   
   #return the depth and snp/loci dataframes in case you want to do your own visualizations

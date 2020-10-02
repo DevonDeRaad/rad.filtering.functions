@@ -1,7 +1,3 @@
-library(vcfR)
-library(stringr)
-library(ggplot2)
-library(ggridges)
 
 #open function:
 optimize_m <- function(m3=NULL,m4=NULL,m5=NULL,m6=NULL,m7=NULL){
@@ -20,9 +16,9 @@ optimize_m <- function(m3=NULL,m4=NULL,m5=NULL,m6=NULL,m7=NULL){
     if(is.null(x)){j=j+1} else{
       #calculate depth first
       ##read in vcfR
-      vcf.r<- read.vcfR(x) #read in all data
+      vcf.r<- vcfR::read.vcfR(x) #read in all data
       ###calc avg depth of each individual
-      dep<- (colSums(extract.gt(vcf.r, element='DP', as.numeric=TRUE), na.rm = T)) / (colSums(is.na(extract.gt(vcf.r, element='DP', as.numeric=TRUE)) == "FALSE"))
+      dep<- (colSums(vcfR::extract.gt(vcf.r, element='DP', as.numeric=TRUE), na.rm = T)) / (colSums(is.na(vcfR::extract.gt(vcf.r, element='DP', as.numeric=TRUE)) == "FALSE"))
       ###rep m identifier, times = number of samples in the vcf
       m<- rep(ms[j], times = length(dep))
       ###cbind depth and m identifier into depth df
@@ -40,7 +36,7 @@ optimize_m <- function(m3=NULL,m4=NULL,m5=NULL,m6=NULL,m7=NULL){
         #calculate the number of snps retained at this cutoff
         snps[k]<-nrow(vcf.r@gt[(rowSums(is.na(vcf.r@gt))/ncol(vcf.r@gt) <= 1-i),])
         #calculate number of polymorphic loci retained at this cutoff
-        poly.loci[k]<-length(unique(str_extract(vcf.r@fix[,3][(rowSums(is.na(vcf.r@gt))/ncol(vcf.r@gt) <= 1-i)], pattern = "[0-9]+")))
+        poly.loci[k]<-length(unique(stringr::str_extract(vcf.r@fix[,3][(rowSums(is.na(vcf.r@gt))/ncol(vcf.r@gt) <= 1-i)], pattern = "[0-9]+")))
         k=k+1
         #close for loop
       }
@@ -64,11 +60,11 @@ optimize_m <- function(m3=NULL,m4=NULL,m5=NULL,m6=NULL,m7=NULL){
   depth.df$dep<-as.numeric(depth.df$dep)
   print("Visualize how different values of m affect average depth in each sample")
   print(
-    ggplot(depth.df, aes(x = dep, y = m, fill = m, color = m)) +
-      geom_density_ridges(jittered_points = TRUE, position = "raincloud", alpha = .35, cex=.5) +
-      theme_classic() +
-      labs(x = "average depth in each sample", y = "m value (minimum stack depth)") +
-      theme(legend.position = "none")
+    ggplot2::ggplot(depth.df, ggplot2::aes(x = dep, y = m, fill = m, color = m)) +
+      ggridges::geom_density_ridges(jittered_points = TRUE, position = "raincloud", alpha = .35, cex=.5) +
+      ggplot2::theme_classic() +
+      ggplot2::labs(x = "average depth in each sample", y = "m value (minimum stack depth)") +
+      ggplot2::theme(legend.position = "none")
   )
   #take m df output from all these possibilities
   #plot number of SNPs retained colored by m at each filt level, as open circles
@@ -83,13 +79,14 @@ optimize_m <- function(m3=NULL,m4=NULL,m5=NULL,m6=NULL,m7=NULL){
   m.df$snp.locus<-as.character(m.df$snp.locus)
   print("The optimal m value returns the most polymorphic loci in the 80% complete matrix (Paris et al. 2017)")
   print(
-    ggplot(m.df, aes(x=filt, y=retained, col = m, shape=snp.locus))+
-      geom_point()+
-      ggtitle("total SNPs and polymorphic loci retained by filtering scheme") +
-      xlab("fraction of non-missing genotypes required to retain each SNP (0-1)") + ylab("# SNPs/loci")+
-      theme_light()+
-      geom_vline(xintercept=.8)+
-      labs(col = "min. stack depth", shape="")
+    ggplot2::ggplot(m.df, ggplot2::aes(x=filt, y=retained, col = m, shape=snp.locus))+
+      ggplot2::geom_point(alpha = .75, size=3)+
+      ggplot2::ggtitle("total SNPs and polymorphic loci retained by filtering scheme")+
+      ggplot2::xlab("fraction of non-missing genotypes required to retain each SNP (0-1)")+ 
+      ggplot2::ylab("# SNPs/loci")+
+      ggplot2::theme_light()+
+      ggplot2::geom_vline(xintercept=.8)+
+      ggplot2::labs(col = "min. stack depth", shape="")
   )
   
   #return the depth and snp/loci dataframes in case you want to do your own visualizations

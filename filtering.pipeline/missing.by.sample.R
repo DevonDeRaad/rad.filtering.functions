@@ -1,23 +1,10 @@
-library(vcfR)
-library(ggplot2)
-library(gridExtra)
-
-###THIS IS THE FUNCTION TO VISUALIZE MISSING DATA BY SAMPLE
-###CAN ALSO HANDLE POPMAP
-##DOES EVERYTHING NEEDED
-
-#going to lean heavily on the tutorial from Knaus:
+#leans heavily on the tutorial from Knaus:
 #https://knausb.github.io/vcfR_documentation/sequence_coverage.html
-
-
-#read in vcf as vcfR
-vcfR <- read.vcfR("~/Downloads/todi.allsnps.vcf")
-
-
+#open function
 missing.by.sample <- function(vcfR, popmap=NULL, cutoff=NULL){
         
   #extract depth from the vcf
-  dp<- extract.gt(vcfR, element='DP', as.numeric=TRUE)
+  dp<- vcfR::extract.gt(vcfR, element='DP', as.numeric=TRUE)
   
         if (is.null(cutoff)){
 
@@ -39,20 +26,22 @@ missing.by.sample <- function(vcfR, popmap=NULL, cutoff=NULL){
                   #bring in popmap
                   df.f<-merge(df.x, popmap, by="id")
                   #plot missingness and depth by pop
-                  plot1<-ggplot(df.f, aes(x= reorder(pop, -missingness), y=missingness)) + 
-                    geom_violin()+ theme_classic()+
-                    theme(axis.title.x = element_blank(), axis.text.x = element_text(angle = 60, hjust = 1))+
-                    ylab("proportion missing")+
-                    geom_dotplot(binaxis='y', stackdir='center', dotsize=.8)
+                  plot1<-ggplot2::ggplot(df.f, ggplot2::aes(x= reorder(pop, -missingness), y=missingness)) + 
+                    ggplot2::geom_violin()+
+                    ggplot2::theme_classic()+
+                    ggplot2::theme(axis.title.x = element_blank(), axis.text.x = element_text(angle = 60, hjust = 1))+
+                    ggplot2::ylab("proportion missing")+
+                    ggplot2::geom_dotplot(binaxis='y', stackdir='center', dotsize=.8)
                   #dotplot avg depth of sequencing       
-                  plot2<-ggplot(df.f, aes(x= reorder(pop, -missingness), y=avg.depth)) + 
-                    geom_violin()+ theme_classic()+
-                    theme(axis.title.x = element_blank(), axis.text.x = element_text(angle = 60, hjust = 1))+
-                    ylab("average depth")+
-                    geom_dotplot(binaxis='y', stackdir='center', dotsize=.8)
+                  plot2<-ggplot2::ggplot(df.f, ggplot2::aes(x= reorder(pop, -missingness), y=avg.depth)) + 
+                    ggplot2::geom_violin()+
+                    ggplot2::theme_classic()+
+                    ggplot2::theme(axis.title.x = element_blank(), axis.text.x = element_text(angle = 60, hjust = 1))+
+                    ggplot2::ylab("average depth")+
+                    ggplot2::geom_dotplot(binaxis='y', stackdir='center', dotsize=.8)
                   
                   #
-                  grid.arrange(plot1,plot2)
+                  gridExtra::grid.arrange(plot1,plot2)
                   
                 }
       
@@ -75,14 +64,16 @@ missing.by.sample <- function(vcfR, popmap=NULL, cutoff=NULL){
     #make columns numeric for plotting
     df.y$filt<-as.numeric(as.character(df.y$filt))
     df.y$snps.retained<-as.numeric(as.character(df.y$snps.retained))
+    rownames(df.y)<-NULL
     #visualize color coded by individual
     print( 
-      ggplot(df.y, aes(x=filt, y=snps.retained, color=indiv))+
-        geom_point()+
-        ggtitle("SNPs retained by filtering scheme") +
-        xlab("fraction of non-missing genotypes required to retain each SNP (0-1)") + ylab("non-missing SNPs retained per sample")+
-        theme_light()+
-        theme(legend.position="none")
+      ggplot2::ggplot(df.y, ggplot2::aes(x=filt, y=snps.retained, color=indiv))+
+        ggplot2::geom_point()+
+        ggplot2::ggtitle("SNPs retained by filtering scheme") +
+        ggplot2::xlab("fraction of non-missing genotypes required to retain each SNP (0-1)")+
+        ggplot2::ylab("non-missing SNPs retained per sample")+
+        ggplot2::theme_light()+
+        ggplot2::theme(legend.position="none")
     )
     
     #calculate missingness by individual
@@ -92,7 +83,7 @@ missing.by.sample <- function(vcfR, popmap=NULL, cutoff=NULL){
     abline(v=c(.5,.6,.7,.8,.9,1), lty="dashed")
     
     #return the dataframe showing the missingness and avg depth per individual
-    return(df.x)
+    return(df.y)
     
       }
   else {
@@ -112,12 +103,4 @@ missing.by.sample <- function(vcfR, popmap=NULL, cutoff=NULL){
   }
     
 }
-
-
-#run filter function
-missing.by.sample(vcfR=vcfR, popmap = popmap)
-
-
-
-
 
